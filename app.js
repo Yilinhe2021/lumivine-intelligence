@@ -880,11 +880,12 @@ function downloadPDF() {
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
+        width: el.scrollWidth,
         windowWidth: el.scrollWidth,
         windowHeight: el.scrollHeight,
       },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-      pagebreak: { mode: ["css", "legacy"], after: ".rp-page" },
+      pagebreak: { mode: ["css"], after: ".rp-page" },
     };
 
     html2pdf().set(opt).from(el).save()
