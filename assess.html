@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>免费留学评估 · Lumivine Intelligence 慧木咨询</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  :root {
+    --espresso: #3a2a1a; --coffee: #6f4e37; --caramel: #a6824c; --wheat: #d9b779;
+    --cream: #faf4e8; --cream-deep: #f3e8d2; --tan: #ede0c8; --olive: #7d8c69;
+    --gray: #9a8d78; --line: #e6d9bf;
+    --st-good: #7d8c69; --st-mid: #c0892d; --st-gap: #b5612e; --st-na: #b8ac95;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", -apple-system, sans-serif;
+    background: var(--cream); color: var(--espresso);
+    min-height: 100vh; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--coffee); }
+  a:hover { color: var(--espresso); }
+
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(250,244,232,0.95); backdrop-filter: blur(10px);
+    padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+  }
+  .logo-link { display:flex; align-items:baseline; gap:8px; text-decoration:none; }
+  .logo .en { font-size: 19px; font-weight: 800; letter-spacing: 1.5px; color: var(--coffee); }
+  .logo .en .dot { color: var(--wheat); }
+  .logo .cn { font-size: 13px; color: var(--caramel); letter-spacing: 1px; }
+  .progress-info { font-size: 13px; color: var(--gray); }
+  .progress-track { position: fixed; top: 57px; left: 0; right: 0; height: 3px; background: var(--tan); z-index: 100; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--coffee), var(--wheat)); width: 0%; transition: width 0.4s ease; }
+  .progress-segs { position: fixed; top: 60px; left: 0; right: 0; z-index: 99; display:flex; gap:3px; padding:0 28px; max-width:680px; margin:0 auto; }
+  .progress-seg { flex:1; height:3px; background:var(--tan); border-radius:2px; overflow:hidden; }
+  .progress-seg .fill { height:100%; width:0%; background:var(--caramel); transition:width .3s ease; }
+  .progress-note { position:fixed; top:70px; left:0; right:0; z-index:99; text-align:center; font-size:11.5px; color:var(--gray); padding:0 24px; opacity:0; transition:opacity .25s ease; }
+  .progress-note.show { opacity:1; }
+  .lang-toggle { display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; font-size:12px; font-weight:600; margin-left:14px; }
+  .lang-toggle button { border:none; background:white; color:var(--gray); padding:6px 11px; cursor:pointer; font-family:inherit; }
+  .lang-toggle button.active { background:var(--coffee); color:white; }
+  .topbar-right { display:flex; align-items:center; }
+
+  .container { max-width: 680px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 112px 24px 60px; }
+
+  .welcome { text-align: center; animation: fadeUp 0.6s ease; }
+  .welcome h1 { font-size: 36px; color: var(--espresso); margin-bottom: 16px; line-height: 1.35; }
+  .welcome h1 .accent { color: var(--coffee); }
+  .welcome .sub { font-size: 16px; color: var(--gray); margin-bottom: 12px; line-height: 1.7; }
+  .features { display: flex; gap: 14px; justify-content: center; margin: 32px 0; flex-wrap: wrap; }
+  .feature { background: white; border-radius: 14px; padding: 20px 22px; border: 1px solid var(--line); min-width: 150px; box-shadow: 0 2px 12px rgba(111,78,55,0.04); }
+  .feature .num { font-size: 12px; font-weight: 800; letter-spacing: 1px; color: var(--wheat); margin-bottom: 8px; }
+  .feature .ft { font-size: 14px; font-weight: 700; color: var(--coffee); }
+  .feature .fd { font-size: 12px; color: var(--gray); margin-top: 4px; }
+
+  .question-screen { animation: fadeUp 0.45s ease; display: none; }
+  .question-screen.active { display: block; }
+  .section-tag { display: inline-block; font-size: 12px; color: var(--caramel); font-weight: 700; letter-spacing: 1px; margin-bottom: 14px; background: var(--cream-deep); padding: 5px 14px; border-radius: 20px; }
+  .q-text { font-size: 27px; color: var(--espresso); font-weight: 700; line-height: 1.4; margin-bottom: 10px; }
+  .q-sub { font-size: 14px; color: var(--gray); margin-bottom: 26px; line-height: 1.6; }
+
+  .input-field { width: 100%; font-size: 17px; padding: 16px 18px; border: 2px solid var(--line); border-radius: 14px; background: white; color: var(--espresso); font-family: inherit; transition: border 0.2s; }
+  .input-field:focus { outline: none; border-color: var(--caramel); }
+  textarea.input-field { resize: vertical; min-height: 120px; line-height: 1.6; }
+
+  .options { display: flex; flex-direction: column; gap: 11px; }
+  .option { padding: 15px 18px; border: 2px solid var(--line); border-radius: 14px; background: white; cursor: pointer; font-size: 16px; transition: all 0.18s; display: flex; align-items: center; gap: 12px; }
+  .option:hover { border-color: var(--caramel); background: #fffdf8; }
+  .option.selected { border-color: var(--coffee); background: var(--cream-deep); }
+  .option .checkbox { width: 22px; height: 22px; border: 2px solid var(--line); border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: white; font-size: 13px; }
+  .option.selected .checkbox { background: var(--coffee); border-color: var(--coffee); }
+  .multi-hint { font-size: 12px; color: var(--gray); margin-bottom: 12px; }
+  .privacy-note { font-size: 12px; color: var(--gray); line-height: 1.6; margin-top: 12px; }
+
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; gap: 12px; }
+  .btn { font-size: 15px; padding: 14px 30px; border-radius: 12px; border: none; cursor: pointer; font-family: inherit; font-weight: 600; transition: all 0.2s; }
+  .btn-primary { background: var(--coffee); color: white; }
+  .btn-primary:hover { background: var(--espresso); transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--gray); }
+  .btn-ghost:hover { color: var(--espresso); }
+  .btn-skip { background: transparent; color: var(--gray); font-size: 13px; text-decoration: underline; padding: 8px 0; border: none; cursor: pointer; font-family: inherit; margin-top: 12px; }
+  .btn-skip:hover { color: var(--espresso); }
+  .btn-large { font-size: 18px; padding: 17px 46px; background: var(--coffee); color: white; box-shadow: 0 6px 22px rgba(111,78,55,0.22); }
+  .btn-large:hover { background: var(--espresso); transform: translateY(-2px); }
+
+  .generating { text-align: center; display: none; animation: fadeUp 0.5s ease; }
+  .generating.active { display: block; }
+  .spinner { width: 60px; height: 60px; margin: 0 auto 26px; border: 4px solid var(--tan); border-top-color: var(--wheat); border-radius: 50%; animation: spin 1s linear infinite; }
+  .gen-msg { font-size: 20px; color: var(--coffee); font-weight: 700; margin-bottom: 10px; }
+  .gen-sub { font-size: 14px; color: var(--gray); }
+  .gen-bar { width: 100%; max-width: 360px; height: 6px; background: var(--tan); border-radius: 10px; margin: 24px auto; overflow: hidden; }
+  .gen-bar-fill { height: 100%; background: linear-gradient(90deg, var(--coffee), var(--wheat)); width: 5%; transition: width 0.6s ease; border-radius: 10px; }
+  .error-msg { background: #f9ece4; border: 1px solid #e0b59a; color: #9a4a23; border-radius: 12px; padding: 14px 18px; margin-top: 16px; font-size: 13px; display: none; text-align: left; }
+  .error-msg.show { display: block; }
+
+  .done { text-align: center; display: none; animation: fadeUp 0.5s ease; }
+  .done.active { display: block; }
+  .done .check { width: 78px; height: 78px; margin: 0 auto 22px; border-radius: 50%; background: var(--olive); color: white; font-size: 38px; display: flex; align-items: center; justify-content: center; }
+  .done h2 { font-size: 28px; color: var(--coffee); margin-bottom: 12px; }
+  .done p { font-size: 15px; color: var(--gray); margin-bottom: 26px; }
+  .done .followup { font-size: 13px; color: var(--gray); margin-top: 22px; }
+  .done .hint { font-size: 12.5px; color: var(--gray); margin-top: 16px; }
+  .done-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  .config-warn { display: none; background: #fbf2dd; border: 1px solid var(--wheat); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; font-size: 13px; color: #8a6a1f; }
+  .config-warn.show { display: block; }
+  .config-warn code { background: rgba(0,0,0,0.05); padding: 1px 6px; border-radius: 4px; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #reportMount { display: none; }
+
+  @media (max-width: 600px) {
+    .topbar { padding: 12px 18px; }
+    .logo .cn { display: none; }
+    .container { padding: 96px 18px 48px; }
+    .welcome h1 { font-size: 27px; }
+    .welcome .sub { font-size: 14px; }
+    .features { margin: 24px 0; }
+    .feature { min-width: 120px; padding: 16px 16px; flex: 1 1 120px; }
+    .q-text { font-size: 21px; }
+    .actions { flex-wrap: wrap; }
+    .btn { padding: 13px 22px; font-size: 14px; }
+    .progress-segs { padding: 0 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo-link" href="index.html">
+    <div class="logo"><span class="en">LUMIVINE<span class="dot">.</span></span><span class="cn">慧木咨询</span></div>
+  </a>
+  <div class="topbar-right">
+    <div class="progress-info" id="progressInfo"></div>
+    <div class="lang-toggle"><button id="langZh" onclick="setLang('zh')">中文</button><button id="langEn" onclick="setLang('en')">EN</button></div>
+  </div>
+</div>
+<div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+<div class="progress-segs" id="progressSegs"></div>
+<div class="progress-note" id="progressNote"></div>
+
+<div class="container" id="mainContainer">
+
+  <div class="welcome" id="welcome">
+    <h1 data-i18n-html="welcome.title">3 分钟，看清孩子的<br><span class="accent">名校竞争力</span></h1>
+    <p class="sub" data-i18n-html="welcome.sub">回答几个简单的问题，慧木 AI 将为您生成<br>一份专业的个性化留学评估报告</p>
+    <div class="features">
+      <div class="feature"><div class="num">01</div><div class="ft" data-i18n="welcome.f1t">八维度诊断</div><div class="fd" data-i18n="welcome.f1d">名校录取标准全解析</div></div>
+      <div class="feature"><div class="num">02</div><div class="ft" data-i18n="welcome.f2t">精准选校</div><div class="fd" data-i18n="welcome.f2d">冲刺/保底组合</div></div>
+      <div class="feature"><div class="num">03</div><div class="ft" data-i18n="welcome.f3t">PDF 报告</div><div class="fd" data-i18n="welcome.f3d">可下载的专业文档</div></div>
+    </div>
+    <div class="config-warn" id="configWarn"><strong>注意：</strong>服务端尚未配置 API Key。请在 Cloudflare 后台 <code>Settings → Environment variables</code> 添加 <code>ANTHROPIC_API_KEY</code>。</div>
+    <button class="btn btn-large" onclick="startAssessment()" data-i18n="welcome.start">开始评估 →</button>
+    <p style="font-size:12px;color:var(--gray);margin-top:16px" data-i18n="welcome.note">无需注册 · 所有问题均可跳过</p>
+  </div>
+
+  <div class="question-screen" id="questionScreen">
+    <div class="section-tag" id="sectionTag"></div>
+    <div class="q-text" id="qText"></div>
+    <div class="q-sub" id="qSub"></div>
+    <div id="inputArea"></div>
+    <button class="btn-skip" id="skipBtn" onclick="skipQuestion()" data-i18n="q.skip">不太清楚 / 跳过这一题</button>
+    <div class="actions">
+      <button class="btn btn-ghost" id="backBtn" onclick="prevQuestion()" data-i18n="q.back">← 上一题</button>
+      <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">下一题 →</button>
+    </div>
+  </div>
+
+  <div class="generating" id="generating">
+    <div class="spinner"></div>
+    <div class="gen-msg" id="genMsg">正在分析孩子的画像...</div>
+    <div class="gen-sub" data-i18n="gen.sub">这通常需要 30-60 秒，请稍候</div>
+    <div class="gen-bar"><div class="gen-bar-fill" id="genBarFill"></div></div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="done" id="done">
+    <div class="check">✓</div>
+    <h2 data-i18n="done.title">报告已生成</h2>
+    <p data-i18n="done.sub">您可以直接查看网页版，或下载可保存的 PDF 报告</p>
+    <div class="done-actions">
+      <button class="btn btn-ghost" style="border:1.5px solid var(--line)" onclick="previewReport()" data-i18n="done.preview">查看网页版</button>
+      <button class="btn btn-large" id="downloadBtn" data-i18n="done.download">下载 PDF 报告</button>
+    </div>
+    <p class="hint" data-i18n="done.hint">提示：查看网页版后，右上角随时可点击“← 返回结果页”，再回来下载 PDF</p>
+    <br>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="location.reload()" data-i18n="done.restart">重新评估</button>
+    <p class="followup" id="followupNote"></p>
+  </div>
+
+</div>
+
+<div id="reportMount"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

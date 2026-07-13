@@ -1,0 +1,13 @@
+{
+  "name": "lumivine-intelligence",
+  "version": "1.0.0",
+  "description": "Lumivine Intelligence 慧木咨询 - AI 留学评估系统 (Cloudflare Pages)",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev .",
+    "deploy": "wrangler pages deploy ."
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}
