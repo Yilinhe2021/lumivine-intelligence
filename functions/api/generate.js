@@ -1,8 +1,9 @@
 // functions/api/generate.js
-// Cloudflare Pages Function — 服务端调用 Claude，生成评估报告数据
-// API Key 从环境变量读取（在 Cloudflare 后台配置 ANTHROPIC_API_KEY），绝不硬编码
+// Cloudflare Pages Function — calls Claude server-side to generate assessment report data
+// The API key is read from an environment variable (set ANTHROPIC_API_KEY in the Cloudflare
+// dashboard) and must never be hardcoded
 
-// ===== 院校知识库（保留在服务端，不暴露给客户端） =====
+// ===== School knowledge base (kept server-side, never exposed to the client) =====
 const SCHOOLS = [
   { id: "stanford", name: "Stanford University", name_cn: "斯坦福大学", location: "Stanford, CA", rank: 3, intl_admit: 0.04, gpa: [3.96, 4.0], sat: [1500, 1570], majors: ["CS", "Engineering", "Business", "Economics"], cn_pct: 0.06, notes: "极度看重学术热情和创造力。SCEA 早申。" },
   { id: "mit", name: "MIT", name_cn: "麻省理工学院", location: "Cambridge, MA", rank: 2, intl_admit: 0.03, gpa: [3.95, 4.0], sat: [1530, 1580], majors: ["CS", "Math", "Physics", "EECS"], cn_pct: 0.05, notes: "理工科顶级。看重 maker spirit、竞赛/科研深度。" },
@@ -127,8 +128,10 @@ function buildUserMessage(a) {
   return `# 家长提供的孩子信息\n${lines.join("\n")}\n\n# 可选院校库\n${schoolList}\n\n# 任务\n按八大维度评估，挑选8-10所学校组合，生成完整报告数据。严格遵守"诊断到肉治疗留白"原则。school_name必须与院库精确一致，同一学校只能出现在一个档位。`;
 }
 
-// 有效线索通知：家长留了联系方式时，立即（不等报告生成完成）推给顾问团队
-// 需要在 Cloudflare 后台配置 LEAD_WEBHOOK_URL 环境变量（Slack/飞书 Incoming Webhook 均可，格式 {text: "..."}）
+// Lead notification: when a parent leaves contact info, push it to the advisor team
+// immediately (without waiting for report generation to finish).
+// Requires the LEAD_WEBHOOK_URL environment variable in the Cloudflare dashboard
+// (a Slack or Feishu Incoming Webhook both work, format {text: "..."})
 async function notifyLead(env, answers) {
   const webhookUrl = env.LEAD_WEBHOOK_URL;
   if (!webhookUrl || !answers.contact) return;
@@ -149,7 +152,7 @@ async function notifyLead(env, answers) {
       body: JSON.stringify({ text: lines.join("\n") }),
     });
   } catch (e) {
-    /* 通知失败不影响报告生成，仅静默忽略 */
+    /* Notification failures must not affect report generation — fail silently */
   }
 }
 
@@ -175,7 +178,8 @@ export async function onRequestPost(context) {
   }
 
   const answers = body.answers || {};
-  // 留了联系方式即视为有效线索，立即异步通知顾问团队（不等报告生成完成，不阻塞响应）
+  // Leaving contact info counts as a qualified lead — notify the advisor team asynchronously
+  // right away (without waiting for report generation to finish, and without blocking the response)
   context.waitUntil(notifyLead(env, answers));
   const model = env.CLAUDE_MODEL || "claude-sonnet-4-5";
   const userMsg = buildUserMessage(answers);
@@ -195,7 +199,7 @@ export async function onRequestPost(context) {
         max_tokens: 4500,
         temperature: 0.4,
         system: fullSystem,
-        stream: true, // 流式输出：边生成边传，避免 Cloudflare 524 超时
+        stream: true, // stream the output while it's generated, to avoid a Cloudflare 524 timeout
         messages: [
           { role: "user", content: userMsg },
           { role: "assistant", content: "{" },
@@ -211,9 +215,9 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: `Claude API 返回错误 (${claudeResp.status}): ${errText.slice(0, 300)}` }, 502);
   }
 
-  // 把 Claude 的 SSE 事件流转成纯文本增量，持续推给客户端。
-  // 注意：客户端收到的内容是 Claude 在 prefill "{" 之后续写的部分，
-  //       所以客户端需要在最前面补回 "{"。
+  // Convert Claude's SSE event stream into plain-text deltas and keep pushing them to the client.
+  // Note: what the client receives is the continuation Claude wrote after the prefilled "{",
+  //       so the client needs to prepend "{" itself.
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
@@ -239,7 +243,7 @@ export async function onRequestPost(context) {
               await writer.write(encoder.encode(evt.delta.text));
             }
           } catch {
-            /* 忽略非 JSON 的心跳行 */
+            /* ignore non-JSON heartbeat lines */
           }
         }
       }

@@ -1,7 +1,9 @@
 // functions/api/track.js
-// 极简埋点：记录关键漏斗事件（开始问卷 / 到达某分区 / 生成报告 / 下载PDF）
-// 不存储任何 PII，只记录事件名 + 匿名步骤信息，写入 Cloudflare Functions 日志
-// 查看方式：Cloudflare Dashboard → 项目 → Logs（实时日志）或 `wrangler pages deployment tail`
+// Minimal analytics: logs key funnel events (questionnaire started / section reached /
+// report generated / PDF downloaded).
+// Stores no PII — only the event name plus anonymous step info, written to Cloudflare
+// Functions logs. View it via Cloudflare Dashboard → project → Logs (live logs) or
+// `wrangler pages deployment tail`.
 export async function onRequestPost(context) {
   try {
     const body = await context.request.json();

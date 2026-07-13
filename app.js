@@ -1,6 +1,6 @@
 // ============================================================
-// Lumivine Intelligence · 慧木咨询 — 前端逻辑
-// 问卷流程 + 报告渲染 + SVG 图表 + PDF 导出
+// Lumivine Intelligence — frontend logic
+// Questionnaire flow + report rendering + SVG charts + PDF export
 // ============================================================
 
 const QUESTIONS = [
@@ -26,7 +26,7 @@ const QUESTIONS = [
   { id: "other_notes", section: "个人特质", section_en: "Character", section_idx: 5, question: "还有什么想让我们了解的吗？", question_en: "Anything else you'd like us to know?", subtitle: "任何您觉得我们应该知道的家庭情况、孩子近况、特殊需求等", subtitle_en: "Family context, recent developments, special needs — anything relevant", type: "textarea", placeholder: "（可选）", placeholder_en: "(optional)", required: false },
   { id: "contact", section: "咨询意向", section_en: "Contact", section_idx: 6, question: "方便留下联系方式吗？", question_en: "Would you like to leave a contact method?", subtitle: "报告生成后，慧木顾问会主动联系您，帮您解读报告并讨论下一步规划（可选，不影响报告生成）", subtitle_en: "After the report is generated, a Lumivine advisor will reach out to walk through it with you (optional, doesn't affect report generation)", type: "text", placeholder: "微信号 / 手机号", placeholder_en: "WeChat ID / phone number", required: false },
 ];
-// 极简埋点：记录漏斗关键事件，写入 Cloudflare Functions 日志（不含任何 PII）
+// Minimal analytics: log key funnel events to Cloudflare Functions logs (no PII)
 function track(event, meta) {
   try {
     fetch("/api/track", {
@@ -229,7 +229,7 @@ function nextQuestion() {
 function prevQuestion() { saveTextInput(); if (currentIdx > 0) { currentIdx--; renderQuestion(); } }
 function skipQuestion() { if (currentIdx === TOTAL - 1) { generateReport(); return; } currentIdx++; renderQuestion(); }
 
-const SECONDS_PER_QUESTION = 11; // 用于估算剩余时间的粗略经验值
+const SECONDS_PER_QUESTION = 11; // rough heuristic used to estimate remaining time
 
 function updateProgress() {
   const pct = Math.round(((currentIdx + 1) / TOTAL) * 100);
@@ -367,7 +367,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ============================================================
-// SVG 图表生成（咖啡/浅黄配色）
+// SVG chart generation (coffee/tan color palette)
 // ============================================================
 const C = {
   espresso: "#3a2a1a", coffee: "#6f4e37", caramel: "#a6824c", wheat: "#d9b779",
@@ -869,34 +869,37 @@ function downloadPDF() {
     btn.disabled = false;
   };
 
-  setTimeout(() => {
-    const el = document.getElementById("reportDoc");
-    const opt = {
-      margin: 0,
-      filename: `Lumivine_${reportData.student_name}_${reportData.report_id}.pdf`,
-      image: { type: "jpeg", quality: 0.95 },
-      html2canvas: {
-        scale: 1.6,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        width: el.scrollWidth,
-        windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight,
-      },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-      // 不使用 css page-break-after 分页：每个 .rp-page 本身就正好是一整页(210mm×297mm)，
-      // html2pdf 的 css 分页插件在元素高度恰好等于一页高度时有已知 bug——会在每页后面
-      // 多插入几乎一整页的空白填充，导致内容页/空白页交替。改为让 html2pdf 按画布高度
-      // 自动切页，因为每个 .rp-page 天然就是一页高，切分结果本来就是一一对应的。
-      pagebreak: { mode: [] },
-    };
+  setTimeout(async () => {
+    // We no longer use html2pdf.js's all-in-one pipeline (internally it clones the whole
+    // report into its own container, then splits it into pages by canvas height — in our
+    // testing this repeatedly produced blank pages / content squeezed to the left, and was
+    // hard to reproduce reliably). Instead we take the most direct and reliable approach:
+    // each .rp-page is already exactly one page (210mm x 297mm), so we screenshot each page
+    // individually and add them to the PDF one at a time, forcing every image to fill the
+    // full page — no automatic pagination/scaling guesswork involved.
+    try {
+      const pages = Array.from(document.querySelectorAll("#reportDoc .rp-page"));
+      if (!pages.length) throw new Error("未找到报告内容");
 
-    html2pdf().set(opt).from(el).save()
-      .then(cleanup)
-      .catch((e) => {
-        cleanup();
-        alert("PDF 生成失败：" + e.message + '\n\n可尝试点击"在线预览"后用浏览器自带的"打印 → 存为 PDF"。');
-      });
+      const pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+
+      for (let i = 0; i < pages.length; i++) {
+        const canvas = await html2canvas(pages[i], {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+        });
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
+      }
+
+      pdf.save(`Lumivine_${reportData.student_name}_${reportData.report_id}.pdf`);
+      cleanup();
+    } catch (e) {
+      cleanup();
+      alert("PDF 生成失败：" + e.message + '\n\n可尝试点击"在线预览"后用浏览器自带的"打印 → 存为 PDF"。');
+    }
   }, 200);
 }
