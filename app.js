@@ -885,7 +885,11 @@ function downloadPDF() {
         windowHeight: el.scrollHeight,
       },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-      pagebreak: { mode: ["css"], after: ".rp-page" },
+      // 不使用 css page-break-after 分页：每个 .rp-page 本身就正好是一整页(210mm×297mm)，
+      // html2pdf 的 css 分页插件在元素高度恰好等于一页高度时有已知 bug——会在每页后面
+      // 多插入几乎一整页的空白填充，导致内容页/空白页交替。改为让 html2pdf 按画布高度
+      // 自动切页，因为每个 .rp-page 天然就是一页高，切分结果本来就是一一对应的。
+      pagebreak: { mode: [] },
     };
 
     html2pdf().set(opt).from(el).save()
